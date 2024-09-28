@@ -6,8 +6,8 @@ import time
 import getpass
 from PIL import Image
 
-# Connect to the Stability API
-STABILITY_KEY = getpass.getpass('Enter your Stability API Key: ')
+# Connect to the Stability API AND ENTER YOUR KEY AS A STRING
+STABILITY_KEY = "ENTER YOUR KEY HERE"
 
 # Define functions
 def send_generation_request(host, params):
@@ -42,8 +42,11 @@ def send_generation_request(host, params):
 
 # Parameters for image generation
 prompts = [
-    "An ultra-realistic, high-definition image of a sleek and modern hat inspired by sonic the hedgehog. The hat features aerodynamic curves and vibrant blue accents, incorporating subtle quill-like textures reminiscent of hedgehog spines. Designed with dynamic lines and a futuristic aesthetic, the hat exudes energy and motion. Set against a clean, minimalist background to emphasize the intricate details and craftsmanship",
-    
+    "An ultra-realistic, high-definition image of a harley quinn",
+    "An ultra-realistic, high-definition image of batwoman",
+    "An ultra-realistic, high-definition image of a super girl",
+    "An ultra-realistic, high-definition image of Gwen stacy"
+
 ]
 
 negative_prompt = "Blurry, low-resolution, cartoonish, text overlays, watermarks, distorted proportions, overly dark or overexposed lighting, unnecessary background distractions"  # You can set negative prompts if needed
