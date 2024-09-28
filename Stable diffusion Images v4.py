@@ -1,15 +1,17 @@
 # Install requirements
+import sys
+
+
+# Import necessary libraries
 import os
 import json
 import requests
 import time
-import getpass
 from PIL import Image
 
-# Connect to the Stability API AND ENTER YOUR KEY AS A STRING
+# Section 1: Connect to the Stability API
 STABILITY_KEY = "ENTER YOUR KEY HERE"
 
-# Define functions
 def send_generation_request(host, params):
     headers = {
         "Accept": "image/*",
@@ -40,61 +42,85 @@ def send_generation_request(host, params):
 
     return response
 
-# Parameters for image generation
-prompts = [
-    "An ultra-realistic, high-definition image of a harley quinn",
-    "An ultra-realistic, high-definition image of batwoman",
-    "An ultra-realistic, high-definition image of a super girl",
-    "An ultra-realistic, high-definition image of Gwen stacy"
+def sanitize_filename(name):
+    # Remove invalid characters and replace spaces with underscores
+    import re
+    name = re.sub(r'[\\/*?:"<>|]', "", name)
+    name = name.strip().replace(" ", "_")
+    return name
 
-]
+# Section 2: Define Parameters and Prompts
+# Here you can specify the folder names and associate prompts with each folder
+prompts = {
+    "Villains": [
+        "An ultra-realistic, high-definition image of Harley Quinn",
+        "An ultra-realistic, high-definition image of Catwoman",
+        "An ultra-realistic, high-definition image of Joker",
+    ],
+    "Heroes": [
+        "An ultra-realistic, high-definition image of Batwoman",
+        "An ultra-realistic, high-definition image of Supergirl",
+        "An ultra-realistic, high-definition image of Wonder Woman",
+    ],
+    "Antiheroes": [
+        "An ultra-realistic, high-definition image of Deadpool",
+        "An ultra-realistic, high-definition image of Venom",
+    ]
+}
 
-negative_prompt = "Blurry, low-resolution, cartoonish, text overlays, watermarks, distorted proportions, overly dark or overexposed lighting, unnecessary background distractions"  # You can set negative prompts if needed
-aspect_ratio = "1:1"  # Aspect ratio for all images
+negative_prompt = (
+    "Blurry, low-resolution, cartoonish, text overlays, watermarks, distorted proportions, "
+    "overly dark or overexposed lighting, unnecessary background distractions"
+)
+aspect_ratio = "1:1"
 seed = 0  # Use 0 for random seed
-output_format = "jpeg"  # Output format
-
+output_format = "jpeg"
 host = "https://api.stability.ai/v2beta/stable-image/generate/sd3"
 
-# Create a folder to save generated images
+# Section 3: Create Output Directory
 output_folder = "generated_images"
 os.makedirs(output_folder, exist_ok=True)
 
-# Loop over each prompt and generate images
-for idx, prompt in enumerate(prompts, start=1):
-    params = {
-        "prompt": prompt,
-        "negative_prompt": negative_prompt,
-        "aspect_ratio": aspect_ratio,
-        "seed": seed,
-        "output_format": output_format,
-        "model": "sd3-large",
-        "mode": "text-to-image"
-    }
+# Section 4: Generate Images and Organize into Specified Folders
+for folder_name, folder_prompts in prompts.items():
+    # Sanitize folder name to ensure it's valid
+    sanitized_folder_name = sanitize_filename(folder_name)
+    folder_path = os.path.join(output_folder, sanitized_folder_name)
+    os.makedirs(folder_path, exist_ok=True)
+    print(f"\n# Generating images for folder: {folder_name}")
 
-    # Send the request and handle the response
-    try:
-        response = send_generation_request(host, params)
+    for idx, prompt in enumerate(folder_prompts, start=1):
+        params = {
+            "prompt": prompt,
+            "negative_prompt": negative_prompt,
+            "aspect_ratio": aspect_ratio,
+            "seed": seed,
+            "output_format": output_format,
+            "model": "sd3-large",
+            "mode": "text-to-image"
+        }
 
-        # Decode response
-        output_image = response.content
-        finish_reason = response.headers.get("finish-reason")
-        seed = response.headers.get("seed")
+        # Send the request and handle the response
+        try:
+            response = send_generation_request(host, params)
 
-        # Check for NSFW classification
-        if finish_reason == 'CONTENT_FILTERED':
-            print(f"Image {idx} failed NSFW classifier and was filtered.")
-            continue
+            # Decode response
+            output_image = response.content
+            finish_reason = response.headers.get("finish-reason")
+            seed = response.headers.get("seed")
 
-        # Save the result with a simple filename
-        generated_filename = f"image_{idx}.{output_format}"
-        generated_path = os.path.join(output_folder, generated_filename)
+            # Check for NSFW classification
+            if finish_reason == 'CONTENT_FILTERED':
+                print(f"Image {idx} in folder '{folder_name}' failed NSFW classifier and was filtered.")
+                continue
 
-        with open(generated_path, "wb") as f:
-            f.write(output_image)
-        print(f"Saved image {generated_path}")
+            # Save the result with a simple filename
+            generated_filename = f"image_{idx}.{output_format}"
+            generated_path = os.path.join(folder_path, generated_filename)
 
-        # The code to display the image has been removed
+            with open(generated_path, "wb") as f:
+                f.write(output_image)
+            print(f"Saved image {generated_path}")
 
-    except Exception as e:
-        print(f"An error occurred while generating image {idx}: {e}")
+        except Exception as e:
+            print(f"An error occurred while generating image {idx} in folder '{folder_name}': {e}")
